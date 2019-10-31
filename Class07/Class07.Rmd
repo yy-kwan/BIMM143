@@ -1,6 +1,6 @@
 ---
 title: "Class 7 R function and packages"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
