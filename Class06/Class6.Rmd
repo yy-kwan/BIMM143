@@ -1,0 +1,111 @@
+---
+title: "Class6 R functions"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#This is H1
+This is my work from class6 in **BIMM 143**
+
+```{r}
+#this is to demo a code chunk
+plot(1:10)
+```
+
+```{r}
+read.table("test1.txt",sep=",", header=T)
+```
+
+```{r}
+read.table("test2.txt",sep="$",header=TRUE)
+```
+
+```{r}
+add <- function(x, y=1) {
+ # Sum the input x and y
+ x + y}
+```
+
+```{r}
+add (1)
+add(5)
+add(c(1,2,3))
+add(c(1,2,3),4)
+```
+
+A new function to re-scale data
+```{r}
+rescale <- function(x) {
+  rng<-range(x)
+(x-rng[1])/(rng[2]-rng[1])
+}
+```
+
+```{r}
+rescale(1:10)
+```
+
+```{r}
+rescale (c(1,2,NA,3,10))
+```
+
+```{r}
+rescale2<-function(x){
+  rng<-range(x,na.rm=TRUE)
+  (x-rng[1])/(rng[2]-rng[1])
+}
+```
+
+```{r}
+rescale2(c(1,2,NA,3,10))
+```
+```{r}
+rescale3 <- function(x, na.rm=TRUE, plot=FALSE) {
+ rng <-range(x, na.rm=na.rm)
+ print("Hello")
+ answer <- (x - rng[1]) / (rng[2] - rng[1])
+ print("is it me you are looking for?")
+ if(plot) {
+ plot(answer, typ="b", lwd=4)
+ }
+ print("I can see it in ...")
+ return(answer)
+}
+```
+
+```{r}
+rescale3(1:10, plot=TRUE)
+```
+
+#Section2 of hands-on sheet
+Install the **bio3d** package for sequence and structure analysis
+
+```{r}
+install.packages("bio3d",repos="http://cran.us.r-project.org")
+```
+
+```{r}
+library(bio3d)
+hi <-function(x) {
+s1 <- read.pdb(x) # kinase with drug
+s1.chainA <- trim.pdb(s1, chain="A", elety="CA")
+s1.b <- s1.chainA$atom$b
+plotb3(s1.b, sse=s1.chainA, typ="l", ylab="Bfactor")
+}
+hi("4AKE")
+hi("1AKE")
+hi("1E4Y")
+```
+
+
+
+
+
+
+
+##Practice reading files (again...)
