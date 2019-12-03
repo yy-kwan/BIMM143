@@ -1,0 +1,166 @@
+---
+title: "Class 14"
+author: "Yu Yan Kwan"
+date: "11/12/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Inpur dataset
+Input countData and colData (metadata)
+```{r}
+counts <- read.csv("airway_scaledcounts.csv", stringsAsFactors = FALSE)
+metadata <-  read.csv("airway_metadata.csv", stringsAsFactors = FALSE)
+```
+
+```{r}
+head(counts)
+```
+
+```{r}
+head(metadata)
+```
+
+#How many genes do we have in this dataset?
+```{r}
+nrow(counts)
+```
+
+#How many experiments do we have?
+```{r}
+ncol(counts)
+```
+
+```{r}
+nrow(metadata)
+```
+
+#We want to know if there is a difference in expression values for control (non-drug) vs treated (drug added cell lines).
+#First step is to find which experiments were the control experiments and then get the average values accross all control experiments. Then we will do the same for drug treated. 
+
+```{r}
+control <- metadata[metadata[,"dex"]=="control",]
+control$id
+```
+
+#Now calculate the mean values accorss these control columns of **countdata**
+```{r}
+control.mean<-rowSums(counts[,control$id])/length(control$id)
+names(control.mean)<-counts$ensgene
+```
+
+#Now we find the treated experiments.
+```{r}
+treated<-metadata[metadata[,"dex"]=="treated",]
+treated$id
+```
+
+#Now calculate the mean values accross the treated columns of **countdata**
+```{r}
+treated.mean<-rowSums(counts[,treated$id])/length(treated$id)
+names(treated.mean)<-counts$ensgene
+```
+
+#We will combine our meancount data for bookkeeping purposes.
+```{r}
+meancounts<-data.frame(control.mean,treated.mean)
+```
+
+#Plot control vs treated
+```{r}
+plot(meancounts$control.mean,meancounts$treated.mean)
+```
+
+#This will be better on a log scale
+```{r}
+plot(meancounts$control.mean,meancounts$treated.mean,log="xy")
+```
+
+
+#Now we want to calculate log2foldchange
+```{r}
+meancounts$log2fc <- log2(meancounts[,"treated.mean"]/meancounts[,"control.mean"])
+head(meancounts)
+```
+
+#We want to delete data which have 0 in it. 
+```{r}
+zero.vals <- which(meancounts[,1:2]==0, arr.ind=TRUE)
+
+to.rm <- unique(zero.vals[,1])
+mycounts <- meancounts[-to.rm,]
+head(mycounts)
+```
+
+#A common threshold used for calling something differentially expressed is a log2(FoldChange) of greater than 2 or less than -2. Let’s filter the dataset both ways to see how many genes are up or down-regulated.
+```{r}
+up.ind <- mycounts$log2fc > 2
+down.ind <- mycounts$log2fc < (-2)
+```
+
+```{r}
+sum(up.ind)
+```
+
+```{r}
+head(mycounts[up.ind,])
+```
+
+
+
+##DESeq2 Analysis
+#DESeq2 is an R package for analyzing count-based NGS data like RNA-seq. It is available from Bioconductor. Bioconductor is a project to provide tools for analyzing high-throughput genomic data including RNA-seq, ChIP-seq and arrays.
+```{r}
+library(DESeq2)
+```
+
+```{r}
+dds <- DESeqDataSetFromMatrix(countData=counts, 
+                              colData=metadata, 
+                              design=~dex, 
+                              tidy=TRUE)
+dds
+```
+
+#Run DESeq2
+```{r}
+dds<-DESeq(dds)
+```
+
+```{r}
+res <- results(dds)
+res
+```
+
+
+#Summary plot: aka Volcano plots
+#This figure will combine both Fold Change and the p-value into one overview figure indicating the porportion of genes with large scale significant differences in their expression.
+```{r}
+#Dull all-black plot
+plot(res$log2FoldChange,-log(res$padj))
+abline(v=c(-2,2),col="gray",lty=2)
+abline(h=-log(0.05),col="gray",lty=2)
+```
+
+```{r}
+#Add some color please
+mycols<-rep("gray",nrow(res))
+
+#make points wit +2 -2 fold change blue
+mycols[abs(res$log2FoldChange)>2]<-"blue"
+
+#make points below p-value cutoff gray
+mycols[(res$padj>0.05)]<-"gray"
+plot(res$log2FoldChange,-log(res$padj),col=mycols)
+abline(v=c(-2,2),col="gray",lty=2)
+abline(h=-log(0.05),col="gray",lty=2)
+```
+
+#Save our results for next day
+```{r}
+write.csv(res,file="expression_results.csv")
+```
+
